@@ -1,7 +1,4 @@
 import datetime
-from socket import create_connection
-from urllib import response
-from venv import create
 
 from django.test import TestCase
 from django.utils import timezone
@@ -24,6 +21,7 @@ class QuestionIndexViewTests(TestCase):
 
     def test_past_questions(self):
         question = create_question(question_text="Past question.", days=-30)
+        question.choice_set.create(choice_text="y")
         response = self.client.get(reverse('polls:index'))
         self.assertQuerysetEqual(
             response.context['latest_question_list'], [question])
@@ -35,19 +33,30 @@ class QuestionIndexViewTests(TestCase):
         self.assertQuerysetEqual(
             response.context['latest_question_list'], [])
 
+    # TODO review
     def test_future_question_and_past_question(self):
-        question = create_question(question_text="Pas question.", days=-30)
+        question = create_question(question_text="Pas de question.", days=-30)
         create_question(question_text="Future question.", days=30)
+        question.choice_set.create(choice_text="y")
         response = self.client.get(reverse('polls:index'))
         self.assertQuerysetEqual(
             response.context['latest_question_list'], [question])
 
     def test_two_past_questions(self):
         question1 = create_question(question_text="Past question1", days=-40)
+        question1.choice_set.create(choice_text="y")
         question2 = create_question(question_text="Past question2", days=-30)
+        question2.choice_set.create(choice_text="y")
         response = self.client.get(reverse('polls:index'))
         self.assertQuerysetEqual(response.context['latest_question_list'], [
                                  question2, question1])
+
+    def test_question_who_have_not_choice(self):
+        question = create_question(question_text="A question", days=-1)
+        # choices = question.choice_set.count()
+        response = self.client.get(reverse('polls:index'))
+        self.assertContains(response, "No poll are available.")
+        self.assertQuerysetEqual(response.context['latest_question_list'], [])
 
 
 class QuestionDetailsViewTests(TestCase):
